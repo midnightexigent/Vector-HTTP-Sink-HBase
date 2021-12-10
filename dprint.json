@@ -1,7 +1,7 @@
 {
   "incremental": true,
   "rustfmt": {
-    "imports_granularity": "Crates"
+    "imports_granularity": "Crate"
   },
   "json": {
   },
@@ -11,7 +11,7 @@
   },
   "dockerfile": {
   },
-  "includes": ["**/*.{json,md,toml,dockerfile}"],
+  "includes": ["**/*.{json,md,toml,dockerfile,rs}"],
   "excludes": [
     "**/target"
   ],
