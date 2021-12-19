@@ -10,16 +10,15 @@ use hbase_thrift::{
     thrift::{
         protocol::{TBinaryInputProtocol, TBinaryOutputProtocol},
         transport::{
-            ReadHalf, TBufferedReadTransport, TBufferedWriteTransport, TTcpChannel,
-            WriteHalf,
+            ReadHalf, TBufferedReadTransport, TBufferedWriteTransport, TTcpChannel, WriteHalf,
         },
     },
     BatchMutationBuilder, MutationBuilder, THbaseSyncClientExt,
 };
 use serde_json::value::RawValue;
 use std::{
-    collections::{BTreeMap},
-    hash::{Hasher},
+    collections::BTreeMap,
+    hash::Hasher,
     sync::{Arc, RwLock},
 };
 use tower_http::trace::TraceLayer;
