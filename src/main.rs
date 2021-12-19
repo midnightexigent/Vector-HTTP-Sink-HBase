@@ -14,6 +14,7 @@ use hbase_thrift::{
             WriteHalf,
         },
     },
+    BatchMutationBuilder, MutationBuilder, THbaseSyncClientExt,
 };
 use serde_json::value::RawValue;
 use std::{
@@ -46,7 +47,7 @@ impl IntoResponse for Error {
 
 struct LogsTable {
     client: Client,
-    table_name: Vec<u8>,
+    table_name: String,
     column_family: String,
 }
 impl LogsTable {
@@ -54,46 +55,32 @@ impl LogsTable {
         Self {
             client,
             column_family,
-            table_name: table_name.into(),
+            table_name,
         }
     }
     pub fn put_logs(&mut self, logs: Logs) -> hbase_thrift::Result<()> {
-        let mut batch_mutations = Vec::new();
+        let mut row_batches = Vec::new();
         for log in logs {
-            let mut mutations = Vec::new();
-            let mut hasher = DefaultHasher::new();
-            for (key, value) in log {
-                let value = value.get();
-                key.hash(&mut hasher);
-                value.hash(&mut hasher);
-                mutations.push(Mutation {
-                    column: Some(format!("{}:{}", self.column_family.clone(), key).into()),
-                    value: Some(value.into()),
-                    is_delete: Some(false),
-                    write_to_w_a_l: Some(false),
-                });
+            let mut bmb = <BatchMutationBuilder>::default();
+            for (k, v) in log {
+                let mut mb = MutationBuilder::default();
+                mb.value(v.get());
+                mb.column(self.column_family.clone(), k);
+                bmb.mutation(mb);
             }
-            batch_mutations.push(BatchMutation {
-                row: Some(hasher.finish().to_be_bytes().to_vec()),
-                mutations: Some(mutations),
-            });
+            row_batches.push(bmb.build());
         }
-
         self.client
-            .mutate_rows(self.table_name.clone(), batch_mutations, BTreeMap::new())
+            .table(self.table_name.clone())
+            .put(row_batches, None, None)
     }
 }
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
-    let mut channel = TTcpChannel::new();
-    channel.open("localhost:9090")?;
-    let (i_chan, o_chan) = channel.split()?;
-    let i_prot = TBinaryInputProtocol::new(TBufferedReadTransport::new(i_chan), true);
-    let o_prot = TBinaryOutputProtocol::new(TBufferedWriteTransport::new(o_chan), true);
 
-    let client = HbaseSyncClient::new(i_prot, o_prot);
+    let client = hbase_thrift::client("localhost:9090")?;
 
     let app = Router::new()
         .route("/", post(put_logs))

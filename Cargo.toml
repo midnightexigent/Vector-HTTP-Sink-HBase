@@ -8,9 +8,9 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.51"
 axum = "0.4.2"
-hbase-thrift = { git = "https://github.com/midnightexigent/hbase-thrift-rs.git" }
-serde_json = { version = "1.0.72", features = ["raw_value"] }
-tokio = { version = "1.14.0", features = ["macros", "rt-multi-thread"] }
+hbase-thrift = { path = "../hbase-thrift-rs" }
+serde_json = { version = "1.0.73", features = ["raw_value"] }
+tokio = { version = "1.15.0", features = ["macros", "rt-multi-thread"] }
 tower-http = { version = "0.2.0", features = ["trace"] }
 tracing = "0.1.29"
 tracing-subscriber = { version = "0.3.3", features = ["env-filter"] }
