@@ -69,7 +69,7 @@ impl LogsTable {
             row_batches.push(bmb.build());
         }
         self.client
-            .table(self.table_name.clone())
+            .table(self.table_name.clone())?
             .put(row_batches, None, None)
     }
 }
@@ -78,7 +78,8 @@ impl LogsTable {
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
 
-    let client = hbase_thrift::client("localhost:9090")?;
+    let mut client = hbase_thrift::client("localhost:9090")?;
+    client.table("logs".to_string())?;
 
     let app = Router::new()
         .route("/", post(put_logs))

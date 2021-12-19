@@ -166,9 +166,10 @@ dependencies = [
 [[package]]
 name = "hbase-thrift"
 version = "0.2.0"
-source = "git+https://github.com/midnightexigent/hbase-thrift-rs#abf49465777b62bf717a5b6c53513d3074bc8838"
+source = "git+https://github.com/midnightexigent/hbase-thrift-rs#d33d8111845cdd52239bce5f1f635037fb8468d1"
 dependencies = [
  "easy-ext",
+ "thiserror",
  "thrift",
 ]
 
@@ -531,6 +532,26 @@ name = "sync_wrapper"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "20518fe4a4c9acf048008599e464deb21beeae3d3578418951a189c235a7a9a8"
+
+[[package]]
+name = "thiserror"
+version = "1.0.30"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "854babe52e4df1653706b98fcfc05843010039b406875930a70e4d9644e5c417"
+dependencies = [
+ "thiserror-impl",
+]
+
+[[package]]
+name = "thiserror-impl"
+version = "1.0.30"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aa32fd3f627f367fe16f893e2597ae3c05020f8bba2666a4e6ea73d377e5714b"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
 
 [[package]]
 name = "thread_local"
