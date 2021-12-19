@@ -6,11 +6,11 @@ use axum::{
     AddExtensionLayer, Json, Router,
 };
 use hbase_thrift::{
-    hbase::{BatchMutation, HbaseSyncClient, Mutation, THbaseSyncClient},
+    hbase::{HbaseSyncClient, THbaseSyncClient},
     thrift::{
         protocol::{TBinaryInputProtocol, TBinaryOutputProtocol},
         transport::{
-            ReadHalf, TBufferedReadTransport, TBufferedWriteTransport, TIoChannel, TTcpChannel,
+            ReadHalf, TBufferedReadTransport, TBufferedWriteTransport, TTcpChannel,
             WriteHalf,
         },
     },
@@ -18,8 +18,8 @@ use hbase_thrift::{
 };
 use serde_json::value::RawValue;
 use std::{
-    collections::{hash_map::DefaultHasher, BTreeMap},
-    hash::{Hash, Hasher},
+    collections::{BTreeMap},
+    hash::{Hasher},
     sync::{Arc, RwLock},
 };
 use tower_http::trace::TraceLayer;
