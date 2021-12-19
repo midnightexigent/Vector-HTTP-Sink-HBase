@@ -166,6 +166,7 @@ dependencies = [
 [[package]]
 name = "hbase-thrift"
 version = "0.2.0"
+source = "git+https://github.com/midnightexigent/hbase-thrift-rs#abf49465777b62bf717a5b6c53513d3074bc8838"
 dependencies = [
  "easy-ext",
  "thrift",
