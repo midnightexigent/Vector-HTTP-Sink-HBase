@@ -6,7 +6,7 @@ use axum::{
     AddExtensionLayer, Json, Router,
 };
 use hbase_thrift::{
-    hbase::{HbaseSyncClient, THbaseSyncClient},
+    hbase::HbaseSyncClient,
     thrift::{
         protocol::{TBinaryInputProtocol, TBinaryOutputProtocol},
         transport::{
@@ -18,7 +18,6 @@ use hbase_thrift::{
 use serde_json::value::RawValue;
 use std::{
     collections::BTreeMap,
-    hash::Hasher,
     sync::{Arc, RwLock},
 };
 use tower_http::trace::TraceLayer;
