@@ -1,6 +1,6 @@
 [package]
 name = "vector-http-sink-hbase"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 publish = false
 
@@ -10,7 +10,7 @@ publish = false
 anyhow = "1.0.51"
 axum = "0.4.2"
 clap = { version = "3.0.0-rc.7", features = ["derive"] }
-hbase-thrift = { git = "https://github.com/midnightexigent/hbase-thrift-rs" }
+hbase-thrift = "0.6.0"
 serde_json = { version = "1.0.73", features = ["raw_value"] }
 tokio = { version = "1.15.0", features = ["macros", "rt-multi-thread"] }
 tower-http = { version = "0.2.0", features = ["trace"] }

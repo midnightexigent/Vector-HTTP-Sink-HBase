@@ -212,8 +212,9 @@ checksum = "ab5ef0d4909ef3724cc8cce6ccc8572c5c817592e9285f5464f8e86f8bd3726e"
 
 [[package]]
 name = "hbase-thrift"
-version = "0.2.0"
-source = "git+https://github.com/midnightexigent/hbase-thrift-rs#d33d8111845cdd52239bce5f1f635037fb8468d1"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3c23051b14ec608b3f36818434fe50095063ae83cfc3cac48bf3f40e6097540f"
 dependencies = [
  "easy-ext",
  "thiserror",
@@ -879,7 +880,7 @@ checksum = "8ccb82d61f80a663efe1f787a51b16b5a51e3314d6ac365b08639f52387b33f3"
 
 [[package]]
 name = "vector-http-sink-hbase"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "axum",

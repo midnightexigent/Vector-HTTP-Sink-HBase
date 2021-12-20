@@ -6,16 +6,7 @@ use axum::{
     AddExtensionLayer, Json, Router,
 };
 use clap::Parser;
-use hbase_thrift::{
-    hbase::HbaseSyncClient,
-    thrift::{
-        protocol::{TBinaryInputProtocol, TBinaryOutputProtocol},
-        transport::{
-            ReadHalf, TBufferedReadTransport, TBufferedWriteTransport, TTcpChannel, WriteHalf,
-        },
-    },
-    BatchMutationBuilder, MutationBuilder, THbaseSyncClientExt,
-};
+use hbase_thrift::{BatchMutationBuilder, Client, MutationBuilder, THbaseSyncClientExt};
 use serde_json::value::RawValue;
 use std::{
     collections::BTreeMap,
@@ -23,11 +14,6 @@ use std::{
     sync::{Arc, RwLock},
 };
 use tower_http::trace::TraceLayer;
-
-type Client = HbaseSyncClient<
-    TBinaryInputProtocol<TBufferedReadTransport<ReadHalf<TTcpChannel>>>,
-    TBinaryOutputProtocol<TBufferedWriteTransport<WriteHalf<TTcpChannel>>>,
->;
 
 type Logs = Vec<BTreeMap<String, Box<RawValue>>>;
 
@@ -45,17 +31,19 @@ impl IntoResponse for Error {
     }
 }
 
-struct LogsTable {
-    client: Client,
-    table_name: String,
+type SharedState = Arc<RwLock<State>>;
+
+struct State {
     column_family: String,
+    table_name: String,
+    client: Client,
 }
-impl LogsTable {
+impl State {
     pub fn new(client: Client, table_name: String, column_family: String) -> Self {
         Self {
             client,
-            column_family,
             table_name,
+            column_family,
         }
     }
     pub fn put_logs(&mut self, logs: Logs) -> hbase_thrift::Result<()> {
@@ -70,9 +58,7 @@ impl LogsTable {
             }
             row_batches.push(bmb.build());
         }
-        self.client
-            .table(self.table_name.clone())?
-            .put(row_batches, None, None)
+        self.client.put(&self.table_name, row_batches, None, None)
     }
 }
 
@@ -97,14 +83,16 @@ async fn main() -> anyhow::Result<()> {
 
     let cli = Cli::parse();
 
-    let mut client = hbase_thrift::client(cli.hbase_addr)?;
-    client.table(cli.table_name.clone())?;
+    let client = hbase_thrift::client(cli.hbase_addr)?;
+    let shared_state = SharedState::new(RwLock::new(State::new(
+        client,
+        cli.table_name,
+        cli.column_family,
+    )));
 
     let app = Router::new()
         .route("/", post(put_logs))
-        .layer(AddExtensionLayer::new(Arc::new(RwLock::new(
-            LogsTable::new(client, cli.table_name, cli.column_family),
-        ))))
+        .layer(AddExtensionLayer::new(shared_state))
         .layer(TraceLayer::new_for_http());
 
     tracing::debug!("listening on {}", cli.listen_addr);
@@ -114,9 +102,9 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn put_logs(
+async fn put_logs<'a>(
     Json(logs): Json<Logs>,
-    Extension(table): Extension<Arc<RwLock<LogsTable>>>,
+    Extension(table): Extension<SharedState>,
 ) -> impl IntoResponse {
     table.write().unwrap().put_logs(logs)?;
     Ok::<_, Error>(StatusCode::CREATED)
