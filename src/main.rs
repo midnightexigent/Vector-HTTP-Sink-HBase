@@ -5,6 +5,7 @@ use axum::{
     routing::post,
     AddExtensionLayer, Json, Router,
 };
+use clap::Parser;
 use hbase_thrift::{
     hbase::HbaseSyncClient,
     thrift::{
@@ -18,6 +19,7 @@ use hbase_thrift::{
 use serde_json::value::RawValue;
 use std::{
     collections::BTreeMap,
+    net::SocketAddr,
     sync::{Arc, RwLock},
 };
 use tower_http::trace::TraceLayer;
@@ -74,23 +76,39 @@ impl LogsTable {
     }
 }
 
+#[derive(Parser)]
+#[clap(version, about, author)]
+struct Cli {
+    #[clap(long, default_value = "localhost:9090")]
+    pub hbase_addr: String,
+    #[clap(long, default_value = "logs")]
+    pub table_name: String,
+    #[clap(long, default_value = "data")]
+    pub column_family: String,
+    #[clap(long, default_value = "/")]
+    pub listen_route: String,
+    #[clap(long, default_value = "0.0.0.0:3000")]
+    pub listen_addr: SocketAddr,
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
 
-    let mut client = hbase_thrift::client("localhost:9090")?;
-    client.table("logs".to_string())?;
+    let cli = Cli::parse();
+
+    let mut client = hbase_thrift::client(cli.hbase_addr)?;
+    client.table(cli.table_name.clone())?;
 
     let app = Router::new()
         .route("/", post(put_logs))
         .layer(AddExtensionLayer::new(Arc::new(RwLock::new(
-            LogsTable::new(client, "logs".to_string(), "data".to_string()),
+            LogsTable::new(client, cli.table_name, cli.column_family),
         ))))
         .layer(TraceLayer::new_for_http());
 
-    let addr = "0.0.0.0:3000".parse()?;
-    tracing::debug!("listening on {}", addr);
-    axum::Server::bind(&addr)
+    tracing::debug!("listening on {}", cli.listen_addr);
+    axum::Server::bind(&cli.listen_addr)
         .serve(app.into_make_service())
         .await?;
     Ok(())
