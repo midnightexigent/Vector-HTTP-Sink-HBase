@@ -1,9 +1,4 @@
-use axum::{
-    extract::Extension,
-    http::StatusCode,
-    routing::post,
-    AddExtensionLayer, Json, Router,
-};
+use axum::{extract::Extension, http::StatusCode, routing::post, AddExtensionLayer, Json, Router};
 use clap::Parser;
 use hbase_thrift::{
     hbase::HbaseSyncClient,
@@ -17,10 +12,7 @@ use hbase_thrift::{
     BatchMutationBuilder, MutationBuilder, THbaseSyncClientExt,
 };
 use serde_json::value::RawValue;
-use std::{
-    collections::BTreeMap,
-    net::SocketAddr,
-};
+use std::{collections::BTreeMap, net::SocketAddr};
 use tower_http::trace::TraceLayer;
 
 type Client = HbaseSyncClient<
