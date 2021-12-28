@@ -7,14 +7,14 @@ publish = false
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.51"
-axum = "0.4.2"
-clap = { version = "3.0.0-rc.7", features = ["derive"] }
-hbase-thrift = "0.6.0"
+anyhow = "1.0.52"
+axum = "0.4.3"
+clap = { version = "3.0.0-rc.9", features = ["derive"] }
+hbase-thrift = { version = "0.7.5", features = ["bb8"] }
 serde_json = { version = "1.0.73", features = ["raw_value"] }
 tokio = { version = "1.15.0", features = ["macros", "rt-multi-thread"] }
 tower-http = { version = "0.2.0", features = ["trace"] }
 tracing = "0.1.29"
-tracing-subscriber = { version = "0.3.3", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3.4", features = ["env-filter"] }
 
 [features]

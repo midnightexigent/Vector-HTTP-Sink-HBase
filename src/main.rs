@@ -1,65 +1,48 @@
 use axum::{
     extract::Extension,
     http::StatusCode,
-    response::{IntoResponse, Response},
     routing::post,
     AddExtensionLayer, Json, Router,
 };
 use clap::Parser;
-use hbase_thrift::{BatchMutationBuilder, Client, MutationBuilder, THbaseSyncClientExt};
+use hbase_thrift::{
+    hbase::HbaseSyncClient,
+    thrift::{
+        protocol::{TBinaryInputProtocol, TBinaryOutputProtocol},
+        transport::{
+            ReadHalf, TBufferedReadTransport, TBufferedWriteTransport, TTcpChannel, WriteHalf,
+        },
+    },
+    thrift_pool::{bb8::Pool, MakeBinaryProtocol, MakeBufferedTransport, ThriftConnectionManager},
+    BatchMutationBuilder, MutationBuilder, THbaseSyncClientExt,
+};
 use serde_json::value::RawValue;
 use std::{
     collections::BTreeMap,
     net::SocketAddr,
-    sync::{Arc, RwLock},
 };
 use tower_http::trace::TraceLayer;
 
+type Client = HbaseSyncClient<
+    TBinaryInputProtocol<TBufferedReadTransport<ReadHalf<TTcpChannel>>>,
+    TBinaryOutputProtocol<TBufferedWriteTransport<WriteHalf<TTcpChannel>>>,
+>;
+type ConnectionManager = ThriftConnectionManager<
+    Client,
+    String,
+    MakeBinaryProtocol<TBufferedReadTransport<ReadHalf<TTcpChannel>>>,
+    MakeBinaryProtocol<TBufferedWriteTransport<WriteHalf<TTcpChannel>>>,
+    MakeBufferedTransport<ReadHalf<TTcpChannel>>,
+    MakeBufferedTransport<WriteHalf<TTcpChannel>>,
+>;
+type ConnectionPool = Pool<ConnectionManager>;
+
 type Logs = Vec<BTreeMap<String, Box<RawValue>>>;
 
-struct Error(hbase_thrift::Error);
-
-impl From<hbase_thrift::Error> for Error {
-    fn from(err: hbase_thrift::Error) -> Self {
-        Self(err)
-    }
-}
-
-impl IntoResponse for Error {
-    fn into_response(self) -> Response {
-        (StatusCode::INTERNAL_SERVER_ERROR, self.0.to_string()).into_response()
-    }
-}
-
-type SharedState = Arc<RwLock<State>>;
-
-struct State {
-    column_family: String,
-    table_name: String,
-    client: Client,
-}
-impl State {
-    pub fn new(client: Client, table_name: String, column_family: String) -> Self {
-        Self {
-            client,
-            table_name,
-            column_family,
-        }
-    }
-    pub fn put_logs(&mut self, logs: Logs) -> hbase_thrift::Result<()> {
-        let mut row_batches = Vec::new();
-        for log in logs {
-            let mut bmb = <BatchMutationBuilder>::default();
-            for (k, v) in log {
-                let mut mb = MutationBuilder::default();
-                mb.value(v.get());
-                mb.column(self.column_family.clone(), k);
-                bmb.mutation(mb);
-            }
-            row_batches.push(bmb.build());
-        }
-        self.client.put(&self.table_name, row_batches, None, None)
-    }
+#[derive(Debug, Clone)]
+struct Config {
+    pub column_family: String,
+    pub table_name: String,
 }
 
 #[derive(Parser)]
@@ -83,16 +66,22 @@ async fn main() -> anyhow::Result<()> {
 
     let cli = Cli::parse();
 
-    let client = hbase_thrift::client(cli.hbase_addr)?;
-    let shared_state = SharedState::new(RwLock::new(State::new(
-        client,
-        cli.table_name,
-        cli.column_family,
-    )));
+    let manager: ConnectionManager = ThriftConnectionManager::new(
+        cli.hbase_addr,
+        MakeBinaryProtocol::default(),
+        MakeBinaryProtocol::default(),
+        MakeBufferedTransport::default(),
+        MakeBufferedTransport::default(),
+    );
+    let pool = Pool::builder().build(manager).await?;
 
     let app = Router::new()
         .route("/", post(put_logs))
-        .layer(AddExtensionLayer::new(shared_state))
+        .layer(AddExtensionLayer::new(pool))
+        .layer(AddExtensionLayer::new(Config {
+            column_family: cli.column_family,
+            table_name: cli.table_name,
+        }))
         .layer(TraceLayer::new_for_http());
 
     tracing::debug!("listening on {}", cli.listen_addr);
@@ -104,8 +93,29 @@ async fn main() -> anyhow::Result<()> {
 
 async fn put_logs<'a>(
     Json(logs): Json<Logs>,
-    Extension(table): Extension<SharedState>,
-) -> impl IntoResponse {
-    table.write().unwrap().put_logs(logs)?;
-    Ok::<_, Error>(StatusCode::CREATED)
+    Extension(pool): Extension<ConnectionPool>,
+    Extension(config): Extension<Config>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    let mut conn = pool.get().await.map_err(internal_error)?;
+    let mut row_batches = Vec::new();
+    for log in logs {
+        let mut bmb = <BatchMutationBuilder>::default();
+        for (k, v) in log {
+            let mut mb = MutationBuilder::default();
+            mb.value(v.get());
+            mb.column(config.column_family.clone(), k);
+            bmb.mutation(mb);
+        }
+        row_batches.push(bmb.build());
+    }
+    conn.put(&config.table_name, row_batches, None, None)
+        .map_err(internal_error)?;
+    Ok(StatusCode::CREATED)
+}
+
+fn internal_error<E>(err: E) -> (StatusCode, String)
+where
+    E: std::error::Error,
+{
+    (StatusCode::INTERNAL_SERVER_ERROR, err.to_string())
 }
