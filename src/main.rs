@@ -1,33 +1,26 @@
 use axum::{extract::Extension, http::StatusCode, routing::post, AddExtensionLayer, Json, Router};
+use bb8::Pool;
 use clap::Parser;
 use hbase_thrift::{
-    hbase::HbaseSyncClient,
-    thrift::{
-        protocol::{TBinaryInputProtocol, TBinaryOutputProtocol},
-        transport::{
-            ReadHalf, TBufferedReadTransport, TBufferedWriteTransport, TTcpChannel, WriteHalf,
-        },
-    },
-    thrift_pool::{bb8::Pool, MakeBinaryProtocol, MakeBufferedTransport, ThriftConnectionManager},
-    BatchMutationBuilder, MutationBuilder, THbaseSyncClientExt,
+    hbase::HbaseSyncClient, BatchMutationBuilder, MutationBuilder, THbaseSyncClientExt,
 };
 use serde_json::value::RawValue;
 use std::{collections::BTreeMap, net::SocketAddr};
+use thrift::{
+    protocol::{TBinaryInputProtocol, TBinaryOutputProtocol},
+    transport::{
+        ReadHalf, TBufferedReadTransport, TBufferedWriteTransport, TTcpChannel, WriteHalf,
+    },
+};
+use thrift_pool::{MakeThriftConnectionFromAddrs, ThriftConnectionManager};
 use tower_http::trace::TraceLayer;
 
 type Client = HbaseSyncClient<
     TBinaryInputProtocol<TBufferedReadTransport<ReadHalf<TTcpChannel>>>,
     TBinaryOutputProtocol<TBufferedWriteTransport<WriteHalf<TTcpChannel>>>,
 >;
-type ConnectionManager = ThriftConnectionManager<
-    Client,
-    String,
-    MakeBinaryProtocol<TBufferedReadTransport<ReadHalf<TTcpChannel>>>,
-    MakeBinaryProtocol<TBufferedWriteTransport<WriteHalf<TTcpChannel>>>,
-    MakeBufferedTransport<ReadHalf<TTcpChannel>>,
-    MakeBufferedTransport<WriteHalf<TTcpChannel>>,
->;
-type ConnectionPool = Pool<ConnectionManager>;
+type ConnectionManager<S> = ThriftConnectionManager<MakeThriftConnectionFromAddrs<Client, S>>;
+type ConnectionPool<S> = Pool<ConnectionManager<S>>;
 
 type Logs = Vec<BTreeMap<String, Box<RawValue>>>;
 
@@ -58,13 +51,8 @@ async fn main() -> anyhow::Result<()> {
 
     let cli = Cli::parse();
 
-    let manager: ConnectionManager = ThriftConnectionManager::new(
-        cli.hbase_addr,
-        MakeBinaryProtocol::default(),
-        MakeBinaryProtocol::default(),
-        MakeBufferedTransport::default(),
-        MakeBufferedTransport::default(),
-    );
+    let manager =
+        MakeThriftConnectionFromAddrs::<Client, _>::new(cli.hbase_addr).into_connection_manager();
     let pool = Pool::builder().build(manager).await?;
 
     let app = Router::new()
@@ -85,7 +73,7 @@ async fn main() -> anyhow::Result<()> {
 
 async fn put_logs<'a>(
     Json(logs): Json<Logs>,
-    Extension(pool): Extension<ConnectionPool>,
+    Extension(pool): Extension<ConnectionPool<String>>,
     Extension(config): Extension<Config>,
 ) -> Result<StatusCode, (StatusCode, String)> {
     let mut conn = pool.get().await.map_err(internal_error)?;
