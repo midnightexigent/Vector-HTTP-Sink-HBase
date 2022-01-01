@@ -6,6 +6,9 @@ and writes it to [HBase](https://hbase.apache.org/)
 
 It stores logs as structured data in an HBase column-family
 
+This project interacts with `HBase`'s `thrift` API. 
+It uses [hbase-thrift](https://github.com/midnightexigent/hbase-thrift-rs) and [thrift-pool](https://github.com/midnightexigent/thrift-pool-rs)
+
 ## Usage
 
 - Prepare HBase by creating it, opening its `thrift` port and creating the table/column-family where the structured 
