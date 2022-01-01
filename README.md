@@ -10,6 +10,39 @@ This project interacts with `HBase`'s `thrift` API.
 It uses [hbase-thrift](https://github.com/midnightexigent/hbase-thrift-rs)
 and [thrift-pool](https://github.com/midnightexigent/thrift-pool-rs)
 
+## Installation 
+
+Either clone the repo and build it
+
+```bash
+git clone https://github.com/midnightexigent/vector-http-sink-hbase-rs.git
+cd vector-http-sink-hbase-rs
+cargo build --release
+./target/release/vector-http-sink-hbase
+
+```
+
+Or install directly
+
+```bash
+cargo install --git https://github.com/midnightexigent/vector-http-sink-hbase-rs.git
+vector-http-sink-hbase
+
+```
+
+Note: those 2 installation methods require [cargo](https://rustup.rs/)
+
+This can also built with docker 
+
+```bash
+git clone https://github.com/midnightexigent/vector-http-sink-hbase-rs.git
+cd vector-http-sink-hbase-rs
+
+docker build -t vector-http-sink-hbase .
+
+```
+
+
 ## Usage
 
 - Prepare HBase by creating it, opening its `thrift` port and creating the table/column-family where the structured
