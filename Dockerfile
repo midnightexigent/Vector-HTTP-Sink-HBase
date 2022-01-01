@@ -44,4 +44,4 @@ COPY --from=builder /vector-http-sink-hbase/target/x86_64-unknown-linux-musl/rel
 # Use an unprivileged user.
 USER vector-http-sink-hbase:vector-http-sink-hbase
 
-CMD ["/vector-http-sink-hbase/vector-http-sink-hbase"]
+ENTRYPOINT ["/vector-http-sink-hbase/vector-http-sink-hbase"]
