@@ -33,15 +33,24 @@ struct Config {
 #[derive(Parser)]
 #[clap(version, about, author)]
 struct Cli {
-    #[clap(long, default_value = "localhost:9090")]
+    /// Address where hbase's thrift endpoint is exposed
+    #[clap(long, default_value = "localhost:9090", env)]
     pub hbase_addr: String,
-    #[clap(long, default_value = "logs")]
+
+    /// Name of the table in hbase where logs will be written
+    #[clap(long, default_value = "logs", env)]
     pub table_name: String,
-    #[clap(long, default_value = "data")]
+
+    /// Name of the column family where logs will be written
+    #[clap(long, default_value = "data", env)]
     pub column_family: String,
-    #[clap(long, default_value = "/")]
+
+    /// The path where the endpoint will be enabled
+    #[clap(long, default_value = "/", env)]
     pub listen_route: String,
-    #[clap(long, default_value = "0.0.0.0:3000")]
+
+    /// Socket address on which to start the server (address:port)
+    #[clap(long, default_value = "0.0.0.0:3000", env)]
     pub listen_addr: SocketAddr,
 }
 
