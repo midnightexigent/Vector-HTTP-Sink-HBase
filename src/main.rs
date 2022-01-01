@@ -55,19 +55,6 @@ async fn main() -> anyhow::Result<()> {
     let manager =
         MakeThriftConnectionFromAddrs::<Client, _>::new(cli.hbase_addr).into_connection_manager();
     let pool = Pool::builder().build(manager).await?;
-    let pool_clone = pool.clone();
-    let mut client = pool_clone.get().await?;
-    if !client.table_exists(cli.table_name.as_str())? {
-        let col_descriptor = ColumnDescriptor {
-            name: Some("data".into()),
-            compression: Some("NONE".into()),
-            time_to_live: Some(0x7fffffff),
-            max_versions: Some(3),
-            bloom_filter_type: Some("NONE".into()),
-            ..Default::default()
-        };
-        client.create_table(cli.table_name.clone().into(), vec![col_descriptor])?;
-    }
 
     let app = Router::new()
         .route("/", post(put_logs))
