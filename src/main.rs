@@ -5,7 +5,7 @@ use hbase_thrift::{
     hbase::HbaseSyncClient, BatchMutationBuilder, MutationBuilder, THbaseSyncClientExt,
 };
 use serde_json::value::RawValue;
-use std::{collections::BTreeMap, net::SocketAddr};
+use std::{collections::BTreeMap, net::SocketAddr, time::Duration};
 use thrift::{
     protocol::{TBinaryInputProtocol, TBinaryOutputProtocol},
     transport::{
@@ -53,7 +53,10 @@ async fn main() -> anyhow::Result<()> {
 
     let manager =
         MakeThriftConnectionFromAddrs::<Client, _>::new(cli.hbase_addr).into_connection_manager();
-    let pool = Pool::builder().build(manager).await?;
+    let pool = Pool::builder()
+        .connection_timeout(Duration::from_secs(5))
+        .build(manager)
+        .await?;
 
     let app = Router::new()
         .route("/", post(put_logs))
