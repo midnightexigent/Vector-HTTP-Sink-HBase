@@ -2,8 +2,7 @@ use axum::{extract::Extension, http::StatusCode, routing::post, AddExtensionLaye
 use bb8::Pool;
 use clap::Parser;
 use hbase_thrift::{
-    hbase::{ColumnDescriptor, HbaseSyncClient, THbaseSyncClient},
-    BatchMutationBuilder, MutationBuilder, THbaseSyncClientExt,
+    hbase::HbaseSyncClient, BatchMutationBuilder, MutationBuilder, THbaseSyncClientExt,
 };
 use serde_json::value::RawValue;
 use std::{collections::BTreeMap, net::SocketAddr};
