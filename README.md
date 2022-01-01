@@ -10,7 +10,7 @@ This project interacts with `HBase`'s `thrift` API.
 It uses [hbase-thrift](https://github.com/midnightexigent/hbase-thrift-rs)
 and [thrift-pool](https://github.com/midnightexigent/thrift-pool-rs)
 
-## Installation 
+## Installation & Running
 
 Either clone the repo and build it
 
@@ -18,7 +18,8 @@ Either clone the repo and build it
 git clone https://github.com/midnightexigent/vector-http-sink-hbase-rs.git
 cd vector-http-sink-hbase-rs
 cargo build --release
-./target/release/vector-http-sink-hbase
+
+./target/release/vector-http-sink-hbase --help
 
 ```
 
@@ -26,7 +27,8 @@ Or install directly
 
 ```bash
 cargo install --git https://github.com/midnightexigent/vector-http-sink-hbase-rs.git
-vector-http-sink-hbase
+
+vector-http-sink-hbase --help
 
 ```
 
@@ -39,6 +41,8 @@ git clone https://github.com/midnightexigent/vector-http-sink-hbase-rs.git
 cd vector-http-sink-hbase-rs
 
 docker build -t vector-http-sink-hbase .
+
+docker run vector-http-sink-hbase --help
 
 ```
 
