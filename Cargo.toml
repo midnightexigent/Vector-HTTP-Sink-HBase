@@ -10,7 +10,7 @@ publish = false
 anyhow = "1.0.52"
 axum = "0.4.3"
 bb8 = "0.7.1"
-clap = { version = "3.0.0-rc.11", features = ["derive"] }
+clap = { version = "3.0.0", features = ["derive"] }
 hbase-thrift = { version = "1.1.0", features = ["bb8"] }
 serde_json = { version = "1.0.73", features = ["raw_value"] }
 thrift = "0.15.0"
